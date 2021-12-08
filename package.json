@@ -4,7 +4,7 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ masterbid/impossible-finance",
+    "deploy": "graph deploy --product hosted-service masterbid/impossible-finance",
     "create-local": "graph create --node http://localhost:8020/ masterbid/impossible-finance",
     "remove-local": "graph remove --node http://localhost:8020/ masterbid/impossible-finance",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 masterbid/impossible-finance"
