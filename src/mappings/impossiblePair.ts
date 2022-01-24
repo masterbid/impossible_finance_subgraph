@@ -1,4 +1,4 @@
-import { BigInt, BigDecimal, store, Address } from '@graphprotocol/graph-ts'
+import { BigInt, BigDecimal, store, Address, ethereum } from '@graphprotocol/graph-ts'
 // import { PairHourData } from '../../generated/schema'
 
 import {
@@ -6,13 +6,11 @@ import {
   Token,
   Factory,
   Transaction,
-  ImpossibleDayData,
-  PairDayData,
-  TokenDayData,
   Mint as MintEvent,
   Burn as BurnEvent,
   Swap as SwapEvent,
-  Bundle
+  Bundle,
+  Block
 } from '../../generated/schema'
 import { Pair as PairContract, Mint, Burn, Swap, Transfer, Sync } from '../../generated/templates/ImpossiblePair/Pair'
 import { updatePairDayData, updateTokenDayData, updateImpossibleDayData, updatePairHourData } from './dayUpdate'
@@ -33,9 +31,35 @@ function isCompleteMint(mintId: string): boolean {
   return MintEvent.load(mintId).sender !== null // sufficient checks
 }
 
+export function handleBlock(block: ethereum.Block): void {
+  let id = block.hash.toHex()
+  let blockEntity = Block.load(id)
+  if(blockEntity == null) {
+    let blockEntity = new Block(id)
+    blockEntity.number = block.number;
+    blockEntity.timestamp = block.timestamp;
+    blockEntity.parentHash = block.parentHash.toHex();
+    blockEntity.author = block.author.toHex();
+    blockEntity.difficulty = block.difficulty;
+    blockEntity.totalDifficulty = block.totalDifficulty;
+    blockEntity.gasUsed = block.gasUsed;
+    blockEntity.gasLimit = block.gasLimit;
+    blockEntity.receiptsRoot = block.receiptsRoot.toHex();
+    blockEntity.transactionsRoot = block.transactionsRoot.toHex();
+    blockEntity.stateRoot = block.stateRoot.toHex();
+    blockEntity.size = block.size;
+    blockEntity.unclesHash = block.unclesHash.toHex();
+    blockEntity.save();
+
+  }
+
+}
+
 export function handleTransfer(event: Transfer): void {
   // ignore initial transfers for first adds
-
+  if (event.params.to.toHexString() == ADDRESS_ZERO && event.params.value.equals(BigInt.fromI32(1000))) {	
+    return	
+  }
   let transactionHash = event.transaction.hash.toHexString()
 
   // user stats
@@ -202,7 +226,7 @@ export function handleTransfer(event: Transfer): void {
 }
 
 export function handleSync(event: Sync): void {
-  let pair = Pair.load(event.address.toHex())
+  let pair = Pair.load(event.address.toHexString())
   let token0 = Token.load(pair.token0)
   let token1 = Token.load(pair.token1)
   let factory = Factory.load(Address.fromString(IMPOSSIBLE_FACTORY_ADDRESS).toHexString())
@@ -237,9 +261,11 @@ export function handleSync(event: Sync): void {
   // get tracked liquidity - will be 0 if neither is in whitelist
   let trackedLiquidityBNB: BigDecimal
   if (bundle.bnbPrice.notEqual(ZERO_BD)) {
-    trackedLiquidityBNB = getTrackedLiquidityUSD(pair.reserve0, token0 as Token, pair.reserve1, token1 as Token).div(
-      bundle.bnbPrice
-    )
+    trackedLiquidityBNB = getTrackedLiquidityUSD(
+      pair.reserve0, 
+      token0 as Token, 
+      pair.reserve1, token1 as Token
+      ).div(bundle.bnbPrice)
   } else {
     trackedLiquidityBNB = ZERO_BD
   }
@@ -267,9 +293,9 @@ export function handleSync(event: Sync): void {
 }
 
 export function handleMint(event: Mint): void {
-    let transaction = Transaction.load(event.transaction.hash.toHexString())
-    let mints = transaction.mints
-    let mint = MintEvent.load(mints[mints.length - 1])
+  let transaction = Transaction.load(event.transaction.hash.toHexString())
+  let mints = transaction.mints
+  let mint = MintEvent.load(mints[mints.length - 1])
 
   let pair = Pair.load(event.address.toHex())
   let factory = Factory.load(Address.fromString(IMPOSSIBLE_FACTORY_ADDRESS).toHexString())
@@ -285,7 +311,7 @@ export function handleMint(event: Mint): void {
   token0.txCount = token0.txCount.plus(ONE_BI)
   token1.txCount = token1.txCount.plus(ONE_BI)
 
-  // get new amounts of USD and ETH for tracking
+  // get new amounts of USD and BNB for tracking
   let bundle = Bundle.load('1')
   let amountTotalUSD = token1.derivedBNB
     .times(token1Amount)
@@ -397,7 +423,7 @@ export function handleSwap(event: Swap): void {
   // BNB/USD prices
   let bundle = Bundle.load('1')
 
-  // get total amounts of derived USD and ETH for tracking
+  // get total amounts of derived USD and BNB for tracking
   let derivedAmountBNB = token1.derivedBNB
     .times(amount1Total)
     .plus(token0.derivedBNB.times(amount0Total))
@@ -405,7 +431,7 @@ export function handleSwap(event: Swap): void {
   let derivedAmountUSD = derivedAmountBNB.times(bundle.bnbPrice)
 
   // only accounts for volume through white listed tokens
-  let trackedAmountUSD = getTrackedVolumeUSD(amount0Total, token0 as Token, amount1Total, token1 as Token, pair as Pair)
+  let trackedAmountUSD = getTrackedVolumeUSD(amount0Total, token0 as Token, amount1Total, token1 as Token)
 
   let trackedAmountBNB: BigDecimal
   if (bundle.bnbPrice.equals(ZERO_BD)) {
@@ -444,7 +470,6 @@ export function handleSwap(event: Swap): void {
   factory.txCount = factory.txCount.plus(ONE_BI)
 
   // save entities
-  pair.save()
   token0.save()
   token1.save()
   factory.save()

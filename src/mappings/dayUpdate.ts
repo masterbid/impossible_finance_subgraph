@@ -77,7 +77,7 @@ export function updatePairHourData(event: ethereum.Event): PairHourData {
     pairHourData.hourlyVolumeUSD = ZERO_BD
     pairHourData.hourlyTxns = ZERO_BI
   }
-
+  pairHourData.totalSupply = pair.totalSupply
   pairHourData.reserve0 = pair.reserve0
   pairHourData.reserve1 = pair.reserve1
   pairHourData.reserveUSD = pair.reserveUSD
@@ -111,8 +111,8 @@ export function updateTokenDayData(token: Token, event: ethereum.Event): TokenDa
   }
   tokenDayData.priceUSD = token.derivedBNB.times(bundle.bnbPrice)
   tokenDayData.totalLiquidityToken = token.totalLiquidity
-  tokenDayData.totalLiquidityETH = token.totalLiquidity.times(token.derivedBNB as BigDecimal)
-  tokenDayData.totalLiquidityUSD = tokenDayData.totalLiquidityETH.times(bundle.bnbPrice)
+  tokenDayData.totalLiquidityBNB = token.totalLiquidity.times(token.derivedBNB as BigDecimal)
+  tokenDayData.totalLiquidityUSD = tokenDayData.totalLiquidityBNB.times(bundle.bnbPrice)
   tokenDayData.dailyTxns = tokenDayData.dailyTxns.plus(ONE_BI)
   tokenDayData.save()
 

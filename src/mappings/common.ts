@@ -1,7 +1,7 @@
 import { log, BigInt, BigDecimal, Address, ethereum } from "@graphprotocol/graph-ts"
-import { Factory } from '../../generated/templates/ImpossiblePair/Factory'
+import { StableXFactory } from '../../generated/templates/ImpossiblePair/StableXFactory'
 import { ERC20 } from "../../generated/StableXFactory/ERC20"
-import { User, Bundle, Token, LiquidityPosition, LiquidityPositionSnapshot, Pair } from "../../generated/schema"
+import { User, Bundle, Token, LiquidityPosition, LiquidityPositionSnapshot, Pair, PancakeswapToken } from "../../generated/schema"
 
 export const ADDRESS_ZERO = '0x0000000000000000000000000000000000000000'
 export const IMPOSSIBLE_FACTORY_ADDRESS = '0x918d7e714243f7d9d463c37e106235dcde294ffc'
@@ -13,7 +13,7 @@ export let ZERO_BD = BigDecimal.fromString('0')
 export let ONE_BD = BigDecimal.fromString('1')
 export let BI_18 = BigInt.fromI32(18)
 
-export let factoryContract = Factory.bind(Address.fromString(IMPOSSIBLE_FACTORY_ADDRESS))
+export let factoryContract = StableXFactory.bind(Address.fromString(IMPOSSIBLE_FACTORY_ADDRESS))
 
 export function exponentToBigDecimal(decimals: BigInt): BigDecimal {
   let bd = BigDecimal.fromString('1')
@@ -51,6 +51,39 @@ export function isNullEthValue(value: string): boolean {
   return value == '0x0000000000000000000000000000000000000000000000000000000000000001'
 }
 
+export function getOrCreatePancakeToken(event: ethereum.Event, address: Address): PancakeswapToken {
+    let addressHex = address.toHexString()
+    let token = PancakeswapToken.load(addressHex)
+    if (token != null) {
+        return token as PancakeswapToken
+    }
+
+    token = new PancakeswapToken(addressHex)
+    let tokenInstance = ERC20.bind(address)
+    let tryName = tokenInstance.try_name()
+    if (!tryName.reverted) {
+        token.name = tryName.value
+    }
+    let trySymbol = tokenInstance.try_symbol()
+    if (!trySymbol.reverted) {
+        token.symbol = trySymbol.value
+    }
+    let tryDecimals = tokenInstance.try_decimals()
+    if (!tryDecimals.reverted) {
+        token.decimals = BigInt.fromI32(tryDecimals.value)
+    }
+    let tryTotalSupply = tokenInstance.try_totalSupply()
+    if (!tryTotalSupply.reverted) {
+        token.totalSupply = tryTotalSupply.value
+    }
+    token.tradeVolume = ZERO_BD
+    token.tradeVolumeUSD = ZERO_BD
+    token.untrackedVolumeUSD = ZERO_BD
+    token.txCount = ZERO_BI
+    
+    token.save()
+    return token as PancakeswapToken
+}
 export function getOrCreateToken(event: ethereum.Event, address: Address): Token {
     let addressHex = address.toHexString()
     let token = Token.load(addressHex)

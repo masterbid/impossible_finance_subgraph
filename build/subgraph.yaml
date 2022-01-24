@@ -40,9 +40,9 @@ dataSources:
       language: wasm/assemblyscript
       file: BUSD_WBNB_PAIR\BUSD_WBNB_PAIR.wasm
       entities:
-        - Factory
-        - Token
-        - Pair
+        - PancakeswapFactory
+        - PancakeswapToken
+        - PancakeswapPair
         - Bundle
       abis:
         - name: ERC20
@@ -51,6 +51,8 @@ dataSources:
           file: BUSD_WBNB_PAIR\abis\BUSD_WBNB_PAIR.json
         - name: PancakeFactory
           file: BUSD_WBNB_PAIR\abis\PancakeFactory.json
+        - name: StableXFactory
+          file: BUSD_WBNB_PAIR\abis\StableXFactory.json
       eventHandlers:
         - event: Sync(uint112,uint112)
           handler: handleSync
@@ -67,9 +69,9 @@ dataSources:
       language: wasm/assemblyscript
       file: USDT_WBNB_PAIR\USDT_WBNB_PAIR.wasm
       entities:
-        - Factory
-        - Token
-        - Pair
+        - PancakeFactory
+        - PancakeswapToken
+        - PancakeswapPair
         - Bundle
       abis:
         - name: ERC20
@@ -78,6 +80,8 @@ dataSources:
           file: USDT_WBNB_PAIR\abis\USDT_WBNB_PAIR.json
         - name: PancakeFactory
           file: USDT_WBNB_PAIR\abis\PancakeFactory.json
+        - name: StableXFactory
+          file: USDT_WBNB_PAIR\abis\StableXFactory.json
       eventHandlers:
         - event: Sync(uint112,uint112)
           handler: handleSync
@@ -113,7 +117,7 @@ templates:
           file: ImpossiblePair\abis\IERC20.json
         - name: Pair
           file: ImpossiblePair\abis\Pair.json
-        - name: Factory
+        - name: StableXFactory
           file: ImpossiblePair\abis\StableXFactory.json
       eventHandlers:
         - event: Mint(indexed address,uint256,uint256)
@@ -126,3 +130,5 @@ templates:
           handler: handleTransfer
         - event: Sync(uint112,uint112)
           handler: handleSync
+      blockHandlers:
+        - handler: handleBlock

@@ -1,3 +1,24 @@
+type PancakeswapFactory @entity {
+  # factory address
+  id: ID!
+
+  # pair info
+  pairCount: Int!
+
+  # total volume
+  totalVolumeUSD: BigDecimal!
+  totalVolumeBNB: BigDecimal!
+  untrackedVolumeUSD: BigDecimal!
+
+  # total liquidity
+  totalLiquidityUSD: BigDecimal!
+  totalLiquidityBNB: BigDecimal!
+
+  # transactions
+  txCount: BigInt!
+}
+
+# Impossible factory
 type Factory @entity {
   # factory address
   id: ID!
@@ -18,6 +39,28 @@ type Factory @entity {
   txCount: BigInt!
 }
 
+type PancakeswapToken @entity {
+  # token address
+  id: ID!
+
+  # mirrored from the smart contract
+  symbol: String!
+  name: String!
+  decimals: BigInt!
+
+  # used for other stats like marketcap
+  totalSupply: BigInt!
+
+  # token specific volume
+  tradeVolume: BigDecimal!
+  tradeVolumeUSD: BigDecimal!
+  untrackedVolumeUSD: BigDecimal!
+  # transactions across all pairs
+  txCount: BigInt!
+
+
+  
+}
 type Token @entity {
   # token address
   id: ID!
@@ -49,6 +92,34 @@ type Token @entity {
   pairDayDataQuote: [PairDayData!]! @derivedFrom(field: "token1")
   pairBase: [Pair!]! @derivedFrom(field: "token0")
   pairQuote: [Pair!]! @derivedFrom(field: "token1")
+}
+
+type PancakeswapPair @entity {
+  # pair address
+  id: ID!
+
+  # mirrored from the smart contract
+  token0: Token!
+  token1: Token!
+  reserve0: BigDecimal!
+  reserve1: BigDecimal!
+  totalSupply: BigDecimal!
+
+  # Price in terms of the asset pair
+  token0Price: BigDecimal!
+  token1Price: BigDecimal!
+
+  # lifetime volume stats
+  volumeToken0: BigDecimal!
+  volumeToken1: BigDecimal!
+  volumeUSD: BigDecimal!
+  txCount: BigInt!
+  untrackedVolumeUSD: BigDecimal!
+
+  # creation stats
+  createdAtTimestamp: BigInt!
+  createdAtBlockNumber: BigInt!
+
 }
 
 type Pair @entity {
@@ -238,6 +309,7 @@ type PairHourData @entity {
 
   # derived liquidity
   reserveUSD: BigDecimal!
+  totalSupply: BigDecimal!
 
   # volume stats
   hourlyVolumeToken0: BigDecimal!
@@ -284,9 +356,26 @@ type TokenDayData @entity {
 
   # liquidity stats
   totalLiquidityToken: BigDecimal!
-  totalLiquidityETH: BigDecimal!
+  totalLiquidityBNB: BigDecimal!
   totalLiquidityUSD: BigDecimal!
 
   # price stats
   priceUSD: BigDecimal!
+}
+
+type Block @entity {
+  id: ID!
+  number: BigInt!
+  timestamp: BigInt!
+  parentHash: String
+  author: String
+  difficulty: BigInt
+  totalDifficulty: BigInt
+  gasUsed: BigInt
+  gasLimit: BigInt
+  receiptsRoot: String
+  transactionsRoot: String
+  stateRoot: String
+  size: BigInt
+  unclesHash: String
 }
